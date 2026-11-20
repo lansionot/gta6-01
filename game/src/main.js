@@ -3,7 +3,10 @@
 // renderer paints what is there. The game moves between four screens:
 // title, play, paused and game over. Revision 2: the horn (H), pickup
 // and mission jingles, and window.__solmarAudio so a headless run can
-// prove the WebAudio sounds actually fired.
+// prove the WebAudio sounds actually fired. Revision 3: holding Space
+// (or the mouse) fires repeatedly from the held-key state, and shot mode
+// also exposes window.__solmar so the harness can verify the staged
+// frame (police in frame, player health) instead of only looking at it.
 //
 // ?seed=N fixes the city layout. ?shot=start|play|chase|mission (with
 // &seed=N) stages that scene instead of running the loop, paints it twice
@@ -41,6 +44,10 @@ const audio = createAudio();
 
 function runShot(name) {
   const scene = stageShot(name, world);
+  // Expose the world here too, so a headless run can check the staged
+  // frame's numbers (police in frame, player health) and not just the pixels.
+  window.__solmar = world;
+  window.__solmarAudio = audio;
   let painted = 0;
   function paint() {
     renderer.draw(world.state, scene.screen, { hasSave: false, showMap: false });
@@ -113,7 +120,10 @@ function runGame() {
     }
     if (actions & ACTION_TALK) talkToGiver(world.state);
     if (actions & ACTION_JOB) startCourierJob(world.state);
-    if (actions & ACTION_SHOOT || input.mouse().down) {
+    // A queued shot (one per press, so a quick tap is never lost between
+    // frames) or a held fire key / mouse button: the shoot cooldown paces
+    // the shots, so holding Space keeps firing without key auto-repeat.
+    if (actions & ACTION_SHOOT || input.isShooting()) {
       const mouse = input.mouse();
       const state = world.state;
       const worldPoint = renderer.toWorld(mouse.x, mouse.y, state.camera);
