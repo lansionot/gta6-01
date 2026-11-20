@@ -34,6 +34,8 @@ afternoon through golden dusk toward night, when the windows light up.
 - **Combat** — punch up close, shoot with limited ammo (aim with the
   mouse), thugs who punch back and shoot from range, muzzle flash,
   recoil, hit flashes, screen shake, particles and damage smoke.
+  Hold Space or the mouse button to keep firing — the fire rate paces
+  the shots, no key auto-repeat needed.
 - **Missions** — 3 chained story missions with dialogue, objectives and
   cash rewards, then repeatable jobs in three kinds (press J): package
   delivery, two-stop taxi fares, and getaway drives that bring heat.
@@ -57,7 +59,7 @@ afternoon through golden dusk toward night, when the windows light up.
 | Shift | Run |
 | E | Enter / exit a car |
 | F | Punch |
-| Space / mouse click | Shoot (aim with the mouse) |
+| Space / mouse click | Shoot (aim with the mouse) — hold to keep firing |
 | H | Horn |
 | T | Talk to a mission giver |
 | J | Start a job (after the story) |
@@ -90,9 +92,11 @@ No build step, no network request: `game/` is plain static files.
 `screenshots/` holds real renders of the game taken in a browser:
 `1-start.jpg` (title over the live city), `2-play.jpg` (driving through
 traffic — four traffic cars are seeded on the player's avenue so traffic
-is always in frame), `3-chase.jpg` (a 3-star police chase), `4-mission.jpg`
-(mission 2, the Harbor Kings at the docks). All four are 1280×720 JPEGs,
-each under 256 KiB.
+is always in frame), `3-chase.jpg` (a 3-star police chase — all four
+police cars are clustered behind the player so every car is in frame),
+`4-mission.jpg` (mission 2, the Harbor Kings at the docks — staged
+non-lethally, so the player stays at full health in the frame). All four
+are 1280×720 JPEGs, each under 256 KiB.
 
 ## License
 

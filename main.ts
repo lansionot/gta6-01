@@ -5,7 +5,9 @@
 // judge reads, with the vendored make.fun library. Solmar Bay: a top-down open-world crime game
 // — a drivable city, traffic, pedestrians, police chases, three chained missions and combat.
 // Revision 2 (2026-11-20): richer city and sprites, fairer police and thugs, three job kinds,
-// a 12-coin hunt, a horn, and a sound log for headless verification. Only this header comment
+// a 12-coin hunt, a horn, and a sound log for headless verification. Revision 3 (2026-11-20):
+// hold-to-fire from the held-key state (no key auto-repeat), non-lethal screenshot staging with
+// the police clustered in frame, and small sound and HUD polish. Only this header comment
 // changed here; the dossier plumbing below is untouched.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
