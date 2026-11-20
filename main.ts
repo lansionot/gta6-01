@@ -4,6 +4,9 @@
 // screenshots/ from beside this file to /output and writes /output/dossier.json, the summary the
 // judge reads, with the vendored make.fun library. Solmar Bay: a top-down open-world crime game
 // — a drivable city, traffic, pedestrians, police chases, three chained missions and combat.
+// Revision 2 (2026-11-20): richer city and sprites, fairer police and thugs, three job kinds,
+// a 12-coin hunt, a horn, and a sound log for headless verification. Only this header comment
+// changed here; the dossier plumbing below is untouched.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:

@@ -13,31 +13,41 @@ You are Rook, a driver fresh out of luck in Solmar Bay. Lena and Marco
 pull you into three chained missions — steal a car for the marina, collect
 a debt from the Harbor Kings, then a harbor heist with the whole police
 force on your tail — and after that the city is yours: free roam, courier
-jobs, and as much trouble as you can afford.
+jobs, a 12-coin hunt, and as much trouble as you can afford.
 
 ## The city
 
 A 3200×2400 top-down city: a road grid with traffic, sidewalks full of
-pedestrians, a park, a beach and a harbor. Explore on foot or by car —
-steal parked cars and traffic cars, drive with skid and smoke, and watch
-the day drift from sun-soaked afternoon toward night.
+pedestrians, a park with a pond, a beach with a pier and moored boats,
+dock cranes, street trees, and buildings in three shapes — towers, malls
+and houses. Explore on foot or by car — steal parked cars and traffic
+cars, drive with skid and smoke, and watch the day drift from sun-soaked
+afternoon through golden dusk toward night, when the windows light up.
 
 ## Systems
 
 - **Wanted level** — 1 to 5 stars. Stealing a car, punching a pedestrian
   or firing a shot raises it; police cars chase, ram and, on foot, try to
-  arrest you. Lay low and the heat fades.
+  arrest you. Police are slower than your top speed and steer imperfectly,
+  so a sharp turn loses them; lay low and the heat fades, faster at low
+  stars.
 - **Combat** — punch up close, shoot with limited ammo (aim with the
   mouse), thugs who punch back and shoot from range, muzzle flash,
-  particles and damage smoke.
+  recoil, hit flashes, screen shake, particles and damage smoke.
 - **Missions** — 3 chained story missions with dialogue, objectives and
-  cash rewards, then repeatable courier jobs (press J).
-- **HUD** — health, money, ammo, wanted stars, speed, mission objective
-  and a live minimap; press M for the full city map.
+  cash rewards, then repeatable jobs in three kinds (press J): package
+  delivery, two-stop taxi fares, and getaway drives that bring heat.
+- **Solmar coins** — 12 gold coins hidden on sidewalks, in the park and
+  along the beach. Each pays $25; all 12 pay a $500 bonus.
+- **HUD** — health, money, ammo, coins found, wanted stars, speed,
+  mission objective with a distance readout, and a live minimap; press M
+  for the full city map.
 - **Save** — progress saves on mission completion and on pause, and the
   title screen offers Continue when a save exists (localStorage).
 - **Sound** — WebAudio oscillators only, no audio files: engine hum,
-  police siren, gunshots, punches, pickups and a mission jingle.
+  police siren, gunshots, punches, pickups, coin chimes, a horn (H) and a
+  mission jingle. Every sound is logged, so a headless run can prove the
+  oscillators fired.
 
 ## Controls
 
@@ -48,8 +58,9 @@ the day drift from sun-soaked afternoon toward night.
 | E | Enter / exit a car |
 | F | Punch |
 | Space / mouse click | Shoot (aim with the mouse) |
+| H | Horn |
 | T | Talk to a mission giver |
-| J | Start a courier job (after the story) |
+| J | Start a job (after the story) |
 | M | Full city map |
 | P / Esc | Pause |
 | N | Mute sound |
@@ -77,9 +88,11 @@ No build step, no network request: `game/` is plain static files.
 ## Screenshots
 
 `screenshots/` holds real renders of the game taken in a browser:
-`1-start.png` (title over the live city), `2-play.png` (driving through
-traffic), `3-chase.png` (a 3-star police chase), `4-mission.png`
-(mission 2, the Harbor Kings at the docks).
+`1-start.jpg` (title over the live city), `2-play.jpg` (driving through
+traffic — four traffic cars are seeded on the player's avenue so traffic
+is always in frame), `3-chase.jpg` (a 3-star police chase), `4-mission.jpg`
+(mission 2, the Harbor Kings at the docks). All four are 1280×720 JPEGs,
+each under 256 KiB.
 
 ## License
 
