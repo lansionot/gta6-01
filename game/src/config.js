@@ -4,6 +4,9 @@
 // follows the player through. No rule below depends on the screen size.
 // Revision 2: denser traffic, fairer police, gentler thugs, and a
 // collectible hunt (12 Solmar coins) as the fourth side activity.
+// Revision 3: screenshot staging constants, so the chase shot clusters
+// the police in frame and the mission shot stages without hurting the
+// player; holding Space (or the mouse) now fires repeatedly.
 
 export const VIEW = { width: 1280, height: 720 };
 
@@ -152,3 +155,10 @@ export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 /** Where the save is kept between visits (this browser only). */
 export const SAVE_KEY = 'solmar-bay.save.v2';
 export const BEST_KEY = 'solmar-bay.best';
+
+/** Screenshot staging: the chase drives only this long after the police
+ * are clustered behind the player, so all four cars stay in the frame;
+ * the cluster starts this far behind the player, cars this far apart,
+ * and the police start slower than the player so they trail in a line
+ * instead of piling onto the player's car. */
+export const SHOT = { chaseDriveSeconds: 1.2, policeLead: 220, policeGap: 110, policeSpeed: 260 };

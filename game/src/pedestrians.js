@@ -3,7 +3,9 @@
 // the player punches falls and drops a little cash. Revision 2: they also
 // scatter from police sirens and from the player's car, they cross roads
 // at intersections instead of hugging one block, and a fleeing pedestrian
-// shows a "!" so the panic reads at a glance.
+// shows a "!" so the panic reads at a glance. Revision 3: fleeing
+// pedestrians run a touch faster, so the panic reads even at a glance
+// from the minimap frame.
 import { WORLD } from './config.js';
 import { clampToWorld, hitsBuilding, isOnRoad } from './world.js';
 
@@ -18,7 +20,7 @@ export function updatePedestrian(state, ped, dt, threat) {
   if ((threat.active && dist < 320) || carThreat || sirenNear) {
     ped.fleeing = true;
     ped.angle = Math.atan2(dy, dx);
-    const speed = ped.speed * 2.8;
+    const speed = ped.speed * 3.0;
     const nextX = ped.x + Math.cos(ped.angle) * speed * dt;
     const nextY = ped.y + Math.sin(ped.angle) * speed * dt;
     if (!hitsBuilding(state.city.buildings, nextX, nextY, 10)) {

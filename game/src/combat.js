@@ -4,7 +4,10 @@
 // a wanted star. Enemies chase the player, punch up close and shoot
 // from a distance. Revision 2: thugs are fair (less damage, slower
 // swings, shorter shooting range), hits flash white, kills can drop
-// health, and every shot kicks the player back a little.
+// health, and every shot kicks the player back a little. Revision 3:
+// while a screenshot is being staged (state.staging), enemies still
+// chase and pose, but none of their damage lands — the staged frame
+// shows the fight, not a player being worn down by it.
 import { ENEMY, PLAYER } from './config.js';
 import { addParticles, makeEnemy } from './world.js';
 import { damagePlayer } from './player.js';
@@ -96,7 +99,8 @@ export function updateBullets(state, dt) {
       }
     }
     if (!dead && !bullet.fromPlayer) {
-      if (Math.hypot(state.player.x - bullet.x, state.player.y - bullet.y) < 16) {
+      // Staging a screenshot: enemy bullets fly in the frame but never land.
+      if (!state.staging && Math.hypot(state.player.x - bullet.x, state.player.y - bullet.y) < 16) {
         damagePlayer(state, 12);
         dead = true;
       }
@@ -138,13 +142,14 @@ export function updateEnemies(state, dt) {
       enemy.y += Math.sin(enemy.angle) * enemy.speed * dt;
     } else {
       enemy.punchTimer -= dt;
-      if (enemy.punchTimer <= 0) {
+      // Staging a screenshot: thugs wind up and pose, but no punch lands.
+      if (enemy.punchTimer <= 0 && !state.staging) {
         enemy.punchTimer = ENEMY.punchCooldown;
         damagePlayer(state, ENEMY.punchDamage);
         addParticles(state, player.x, player.y, '#ffffff', 4, 120);
       }
     }
-    if (dist > ENEMY.shootMinRange && dist < ENEMY.shootMaxRange) {
+    if (!state.staging && dist > ENEMY.shootMinRange && dist < ENEMY.shootMaxRange) {
       enemy.shootTimer -= dt;
       if (enemy.shootTimer <= 0) {
         enemy.shootTimer = ENEMY.shootInterval + state.random();

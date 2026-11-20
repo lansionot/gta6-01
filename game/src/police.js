@@ -4,7 +4,9 @@
 // enough and the player is busted. Stars fade when no crime happens and
 // no police car can see the player. Revision 2: police are slower than
 // the player's top speed, steer less perfectly, and the heat fades
-// faster at low stars — escape is always a real option.
+// faster at low stars — escape is always a real option. Revision 3:
+// a ram during screenshot staging still shoves the car, but it does
+// not hurt the player — the staged frame is a picture, not a fight.
 import { POLICE, WANTED } from './config.js';
 import { addParticles, clampToWorld, hitsBuilding, makeCar, roadPoint } from './world.js';
 import { damagePlayer } from './player.js';
@@ -73,7 +75,7 @@ export function updatePoliceCar(state, car, dt) {
     if (player.inCar) {
       // Ram: slow the player's car and shake it, but do not stop it dead.
       player.inCar.speed *= 0.94;
-      damagePlayer(state, POLICE.ramDamage * dt * 2);
+      if (!state.staging) damagePlayer(state, POLICE.ramDamage * dt * 2);
       addParticles(state, car.x, car.y, '#ffdd55', 2, 120);
     } else if (player.speed < 60) {
       // On foot and cornered: the arrest clock runs. Running breaks it.

@@ -3,8 +3,11 @@
 // flee when a shot is fired nearby. Parked cars wait to be stolen.
 // Revision 2: 20 cars instead of 14, each with its own pace, brake lights
 // when slowing, and traffic that steers around the player's car instead
-// of piling into it.
+// of piling into it. Revision 3: cars seeded near the player for a
+// screenshot get their own pace from the shared jitter helper, so the
+// seeded traffic does not move in lockstep either.
 import { CAR, TRAFFIC, WORLD } from './config.js';
+import { jitter } from './random.js';
 import { clampToWorld, hitsBuilding, isOnRoad, makeCar, roadLines, roadPoint } from './world.js';
 
 function nearestCarAhead(state, car) {
@@ -101,6 +104,7 @@ export function seedTrafficNear(state, x, y, count) {
   // player's drive ends up after a few seconds.
   for (let i = 0; i < count; i += 1) {
     const car = makeCar(state.random, x + 140 + i * 450, y + (i % 2 === 0 ? -18 : 18), 0, 'traffic');
+    car.speedFactor = jitter(state.random, 1, 0.12);
     car.speed = TRAFFIC.speed * car.speedFactor;
     state.cars.push(car);
   }

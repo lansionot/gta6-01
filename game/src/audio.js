@@ -3,7 +3,9 @@
 // browser requires one before audio may start). Revision 2: every sound
 // is logged (name + audio-clock time) so a headless run can prove the
 // oscillators actually fired, and there are new sounds for coins, jobs
-// and the car horn.
+// and the car horn. Revision 3: gunshots and coin chimes vary a little
+// in pitch from shot to shot, so repeated fire does not sound like a
+// stuck loop.
 export function createAudio() {
   let context = null;
   let master = null;
@@ -102,10 +104,10 @@ export function createAudio() {
     getLog() { return log.slice(); },
     getEventCount() { return eventCount; },
     isReady() { return context !== null && context.state === 'running'; },
-    gunshot() { noise(0.14, 0.5, 1800); record('gunshot'); },
+    gunshot() { noise(0.14, 0.5, 1600 + Math.random() * 500); record('gunshot'); },
     punch() { noise(0.09, 0.4, 500); tone(90, 0.1, 'sine', 0.3, 50); record('punch'); },
     pickup() { tone(880, 0.12, 'sine', 0.25, 1320); record('pickup'); },
-    coin() { tone(1046, 0.1, 'sine', 0.3); setTimeout(() => tone(1568, 0.18, 'sine', 0.3), 90); record('coin'); },
+    coin() { const detune = 1 + (Math.random() - 0.5) * 0.06; tone(1046 * detune, 0.1, 'sine', 0.3); setTimeout(() => tone(1568 * detune, 0.18, 'sine', 0.3), 90); record('coin'); },
     honk() { tone(370, 0.18, 'square', 0.2); tone(466, 0.18, 'square', 0.15); record('honk'); },
     missionDone() { tone(523, 0.15, 'triangle', 0.3); setTimeout(() => tone(659, 0.15, 'triangle', 0.3), 140); setTimeout(() => tone(784, 0.3, 'triangle', 0.3), 280); record('missionDone'); },
     crash() { noise(0.25, 0.5, 700); record('crash'); },

@@ -2,12 +2,17 @@
 // presses (enter car, punch, shoot, pause, map, courier job) are queued as
 // bit flags and taken once by the loop, so a press between frames is never
 // lost and never counted twice. The mouse aims on foot; menus use clicks.
+// Revision 3: holding Space (or the mouse button) fires repeatedly from
+// the game's own held-key state, not from key auto-repeat — headless
+// browsers never generate repeat keydowns, so auto-repeat could not be
+// verified and the hold never fired there. A press also queues one
+// ACTION_SHOOT, so a quick tap can never fall between two frames.
 
 export const ACTION_CONFIRM = 1;
 export const ACTION_PAUSE = 2;
 export const ACTION_ENTER_CAR = 4;
 export const ACTION_PUNCH = 8;
-export const ACTION_SHOOT = 16;
+export const ACTION_SHOOT = 16; // one queued shot per press: a quick tap must never fall between frames
 export const ACTION_MAP = 32;
 export const ACTION_JOB = 64;
 export const ACTION_TALK = 128;
@@ -37,12 +42,12 @@ export function createInput(canvas) {
   let mouseDown = false;
 
   window.addEventListener('keydown', (event) => {
-    if (event.repeat) {
-      if (CONFIRM.has(event.code)) actions |= ACTION_SHOOT;
-      return;
-    }
     keys.add(event.code);
-    if (CONFIRM.has(event.code)) actions |= ACTION_CONFIRM;
+    if (CONFIRM.has(event.code)) {
+      actions |= ACTION_CONFIRM;
+      // Queue one shot on the first press; repeats are covered by isShooting().
+      if (!event.repeat) actions |= ACTION_SHOOT;
+    }
     else if (PAUSE.has(event.code)) actions |= ACTION_PAUSE;
     else if (ENTER_CAR.has(event.code)) actions |= ACTION_ENTER_CAR;
     else if (PUNCH.has(event.code)) actions |= ACTION_PUNCH;
@@ -64,6 +69,7 @@ export function createInput(canvas) {
   canvas.addEventListener('pointerdown', (event) => {
     mouseDown = true;
     actions |= ACTION_CONFIRM;
+    // Queue one shot on the press; a held button keeps firing via isShooting().
     if (event.button === 0) actions |= ACTION_SHOOT;
   });
   window.addEventListener('pointerup', () => { mouseDown = false; });
@@ -87,6 +93,9 @@ export function createInput(canvas) {
       return { throttle, steer };
     },
     isRunning() { return keys.has('ShiftLeft') || keys.has('ShiftRight'); },
+    /** True while the fire key (Space / Enter) or the mouse button is held:
+     * the loop fires on its own cooldown, so a held key keeps shooting. */
+    isShooting() { return keys.has('Space') || keys.has('Enter') || mouseDown; },
     mouse() { return { x: mouseX, y: mouseY, down: mouseDown }; },
     takeActions() {
       const taken = actions;

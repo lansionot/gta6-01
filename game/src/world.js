@@ -3,7 +3,9 @@
 // the beach, plus the pools of cars, pedestrians, police, enemies and
 // bullets that the other modules move around. Revision 2 adds building
 // variety (towers, malls, houses), street trees, a harbor pier with
-// moored boats, and 12 hidden Solmar coins to collect.
+// moored boats, and 12 hidden Solmar coins to collect. Revision 3 adds
+// state.staging: while a screenshot is being staged, no damage lands
+// on the player and the camera snaps to the player for exact framing.
 import { CAR, COLLECTIBLES, ENEMY, PEDESTRIANS, PLAYER, TRAFFIC, WORLD } from './config.js';
 import { pick, range, shuffle } from './random.js';
 
@@ -215,6 +217,7 @@ export function createWorld(random) {
     pickupEvent: null,
     missionEvent: null,
     saveRequest: false,
+    staging: false, // true only while shots.js stages a screenshot: no damage lands
     camera: { x: 700, y: 700 },
     mission: { index: 0, stage: 'talk', done: 0, target: null, timer: 0, thugsLeft: 0, jobType: null, jobStage: null },
     dialogue: null,
@@ -281,6 +284,7 @@ export function createWorld(random) {
     state.pickupEvent = null;
     state.missionEvent = null;
     state.saveRequest = false;
+    state.staging = false;
     state.camera.x = 700;
     state.camera.y = 700;
     state.mission = { index: 0, stage: 'talk', done: 0, target: null, timer: 0, thugsLeft: 0, jobType: null, jobStage: null };

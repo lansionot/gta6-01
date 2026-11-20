@@ -1,5 +1,7 @@
 // A small seeded random generator (mulberry32) so screenshot scenes and
-// the city layout are deterministic for a given seed.
+// the city layout are deterministic for a given seed. Revision 3 adds
+// jitter: a seeded value around a base, used for per-car pace so traffic
+// seeded for a screenshot does not move in lockstep.
 
 export function makeRandom(seed) {
   let state = seed >>> 0;
@@ -25,6 +27,11 @@ export function pick(random, list) {
 /** A number in [min, max) from the seeded generator. */
 export function range(random, min, max) {
   return min + random() * (max - min);
+}
+
+/** A seeded value around `base`, within ±`amount`. */
+export function jitter(random, base, amount) {
+  return base + (random() - 0.5) * 2 * amount;
 }
 
 /** A shuffled copy of `list`, drawn with the seeded generator. */

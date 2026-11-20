@@ -4,6 +4,8 @@
 // current objective from here. Revision 2: jobs come in three kinds —
 // a plain package run, a two-stop taxi fare, and a getaway drive that
 // brings one star of heat — so free roam stays varied after the story.
+// Revision 3: dialogue always shows for at least a second, so a
+// zero-length briefing can never flash past unseen.
 import { JOBS, MISSIONS } from './config.js';
 import { spawnThugs } from './combat.js';
 import { raiseWanted } from './police.js';
@@ -54,7 +56,7 @@ export function missionTarget(state) {
 }
 
 function say(state, speaker, text, seconds) {
-  state.dialogue = { speaker, text, timer: seconds };
+  state.dialogue = { speaker, text, timer: Math.max(seconds, 1) };
 }
 
 function startMission(state, mission) {

@@ -3,6 +3,8 @@
 // brake and steering, with skid and smoke when turning hard at speed.
 // Revision 2: taking a hit shakes the camera, firing kicks the player
 // back a little, and stepping out of a car picks the side with room.
+// Revision 3: damagePlayer also honours state.staging, so a staged
+// screenshot can never hurt the player however the damage arrives.
 import { CAR, PLAYER, WORLD } from './config.js';
 import { clampToWorld, hitsBuilding, isOnRoad, nearestCar } from './world.js';
 
@@ -99,7 +101,8 @@ export function toggleEnterCar(state) {
 
 export function damagePlayer(state, amount) {
   const player = state.player;
-  if (player.invulnerable > 0 || state.over) return;
+  // Staging a screenshot is not a fight: no damage lands at all.
+  if (player.invulnerable > 0 || state.over || state.staging) return;
   player.health -= amount;
   player.invulnerable = 0.4;
   state.shake = Math.max(state.shake, 0.3);

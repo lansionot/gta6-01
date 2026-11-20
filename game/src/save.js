@@ -3,7 +3,9 @@
 // whether they are in a car. A save is written on mission completion and
 // on pause, and offered as Continue on the title screen when one exists.
 // Revision 2 (save version 2): coins and jobs are saved too, so the
-// collectible hunt and the job count survive a reload.
+// collectible hunt and the job count survive a reload. Revision 3:
+// loadSave refuses a save whose numbers are not numbers, so a damaged
+// entry can never load a broken state.
 import { SAVE_KEY } from './config.js';
 
 const SAVE_VERSION = 2;
@@ -39,6 +41,7 @@ export function loadSave() {
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (data.version !== SAVE_VERSION) return null;
+    if (typeof data.money !== 'number' || typeof data.health !== 'number' || typeof data.ammo !== 'number') return null;
     return data;
   } catch {
     return null;

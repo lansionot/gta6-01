@@ -5,6 +5,8 @@
 // with wheels, headlights and flashing police light bars, people who bob
 // as they walk and shout "!" when they flee, a pulsing mission marker
 // with a distance readout, smooth day-to-night light, and a cleaner HUD.
+// Revision 3: the objective panel is a touch more opaque for contrast,
+// and the title screen names the hold-to-fire control.
 import { CAR, COLLECTIBLES, FONT, PALETTE, PLAYER, VIEW, WORLD } from './config.js';
 import { missionObjective, missionTarget } from './missions.js';
 import { roadLines } from './world.js';
@@ -515,8 +517,10 @@ export function createRenderer(canvas) {
       text('★', VIEW.width - 200 + i * 38, 44, 28, i < state.wanted ? PALETTE.wanted : '#3a3f4a', 'left', true);
     }
     // Mission objective, top centre: mission title over the objective.
+    // A touch more opaque than the other panels, so the objective stays
+    // readable over a bright daytime street.
     const objective = missionObjective(state);
-    panel((VIEW.width - 640) / 2, 12, 640, 56);
+    panel((VIEW.width - 640) / 2, 12, 640, 56, 0.9);
     const mission = state.mission.index < 3 ? `Mission ${state.mission.index + 1} of 3` : 'Free roam';
     text(mission, VIEW.width / 2, 34, 13, PALETTE.accent, 'center', true);
     text(objective, VIEW.width / 2, 56, 18, PALETTE.text, 'center');
@@ -588,6 +592,7 @@ export function createRenderer(canvas) {
         'Solmar Bay — an open-world crime story, all its own.',
         'Steal cars, lose the heat, run three missions for Lena and Marco.',
         'Hunt 12 gold coins hidden around the city — all 12 pay a $500 bonus.',
+        'Hold Space (or the mouse button) to keep firing — the streets answer back.',
         'WASD / arrows move · E enter car · F punch · Space shoot · H horn · M map',
         opts.hasSave ? 'A saved game is waiting — press Enter to continue it.' : 'No save yet — your progress saves when a mission ends.',
       ];

@@ -4,8 +4,12 @@
 // looks like and the same seed always gives the same frame. Revision 2:
 // the play shot seeds traffic on the same avenue the player drives, so
 // traffic is always in frame, and the mission shot puts the thugs and
-// the player in the same view.
-import { STEP } from './config.js';
+// the player in the same view. Revision 3: the chase shot clusters all
+// four police cars behind the player and drives only briefly, so every
+// police car is in the frame; the mission shot stages with
+// state.staging on, so the thugs chase and pose but no damage lands
+// and the player stays at full health in the frame.
+import { SHOT, STEP } from './config.js';
 import { SCREEN_PLAY, SCREEN_TITLE } from './render.js';
 import { stepGame } from './game.js';
 import { drivePlayerCar } from './player.js';
@@ -59,7 +63,18 @@ export function stageShot(name, world) {
     talkToGiver(state);
     raiseWanted(state, 3, 'Police chase.');
     seedTrafficNear(state, 700, 700, 2);
-    for (let i = 0; i < 4 / STEP; i += 1) stepWorld(world, STEP, true);
+    // One step spawns the four police cars (wanted 3 -> 4 cars); then
+    // cluster them behind the player on the same avenue, close together,
+    // so all four are in the 1280x720 frame when the shot is taken.
+    stepWorld(world, STEP, false);
+    state.police.forEach((car, i) => {
+      car.x = 700 - SHOT.policeLead - i * SHOT.policeGap;
+      car.y = 700 + (i % 2 === 0 ? 34 : -34);
+      car.angle = 0;
+      car.speed = SHOT.policeSpeed;
+    });
+    // Drive only briefly: a long drive spreads the chase out of frame.
+    for (let i = 0; i < SHOT.chaseDriveSeconds / STEP; i += 1) stepWorld(world, STEP, true);
     return { screen: SCREEN_PLAY, best: 0 };
   }
   if (name === 'mission') {
@@ -70,9 +85,12 @@ export function stageShot(name, world) {
     state.player.x = 2280;
     state.player.y = 1480;
     state.player.angle = -Math.PI / 2;
-    // The thugs spawn at the docks marker; walk them a little closer so
-    // all three are in the same frame as the player.
+    // Stage non-lethally: the thugs spawn at the docks marker and close
+    // in, but no punch, bullet or ram can hurt the player while staging,
+    // so the frame shows the fight with the player at full health.
+    state.staging = true;
     for (let i = 0; i < 4 / STEP; i += 1) stepGame(state, STEP, {});
+    state.staging = false;
     return { screen: SCREEN_PLAY, best: 0 };
   }
   // play: seed four traffic cars on the player's avenue before driving,

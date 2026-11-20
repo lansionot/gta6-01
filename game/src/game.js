@@ -4,7 +4,8 @@
 // shots.js calls it with no controls after steering the car itself.
 // Revision 2: Solmar coins are collected here (all 12 pay a $500 bonus
 // and request a save), the camera shake decays, and pickup / mission
-// events are flagged for main.js to turn into sounds.
+// events are flagged for main.js to turn into sounds. Revision 3: the
+// camera snaps to the player while a screenshot is being staged.
 import { COLLECTIBLES, STEP, VIEW, WORLD } from './config.js';
 import { drivePlayerCar, movePlayerOnFoot } from './player.js';
 import { updateCars } from './cars.js';
@@ -67,8 +68,11 @@ function updateCamera(state) {
   const player = state.player;
   const targetX = player.x - VIEW.width / 2;
   const targetY = player.y - VIEW.height / 2;
-  state.camera.x += (targetX - state.camera.x) * 0.12;
-  state.camera.y += (targetY - state.camera.y) * 0.12;
+  // While staging a screenshot the camera snaps to the player, so the
+  // framed shot is centred exactly instead of still catching up.
+  const snap = state.staging ? 1 : 0.12;
+  state.camera.x += (targetX - state.camera.x) * snap;
+  state.camera.y += (targetY - state.camera.y) * snap;
   state.camera.x = Math.max(0, Math.min(WORLD.width - VIEW.width, state.camera.x));
   state.camera.y = Math.max(0, Math.min(WORLD.height - VIEW.height, state.camera.y));
   // Camera shake from hits and crashes fades back to still.
