@@ -1,6 +1,9 @@
 // Traffic and parked cars. Traffic cars follow the road grid: they drive
 // along their lane, turn at intersections, brake for the car ahead, and
 // flee when a shot is fired nearby. Parked cars wait to be stolen.
+// Revision 2: 20 cars instead of 14, each with its own pace, brake lights
+// when slowing, and traffic that steers around the player's car instead
+// of piling into it.
 import { CAR, TRAFFIC, WORLD } from './config.js';
 import { clampToWorld, hitsBuilding, isOnRoad, makeCar, roadLines, roadPoint } from './world.js';
 
@@ -56,7 +59,9 @@ export function updateTrafficCar(state, car, dt) {
   }
   steerToAngle(car, targetAngle, dt, 2.2);
   const ahead = nearestCarAhead(state, car);
-  const targetSpeed = ahead ? Math.max(0, ahead.speed - 20) : TRAFFIC.speed;
+  const cruise = TRAFFIC.speed * (car.speedFactor ?? 1);
+  const targetSpeed = ahead ? Math.max(0, ahead.speed - 20) : cruise;
+  car.braking = targetSpeed < car.speed - 30;
   car.speed += (targetSpeed - car.speed) * Math.min(1, dt * 2);
   const nextX = car.x + Math.cos(car.angle) * car.speed * dt;
   const nextY = car.y + Math.sin(car.angle) * car.speed * dt;
@@ -84,8 +89,19 @@ export function updateCars(state, dt) {
     if (traffic.length < TRAFFIC.count) {
       const p = roadPoint(state.random);
       const car = makeCar(state.random, p.x, p.y, 0, 'traffic');
-      car.speed = TRAFFIC.speed;
+      car.speed = TRAFFIC.speed * car.speedFactor;
       state.cars.push(car);
     }
+  }
+}
+
+/** Put `count` traffic cars on the road through (x, y), heading east. */
+export function seedTrafficNear(state, x, y, count) {
+  // Spread over ~2 km of road, so cars stay in frame wherever the
+  // player's drive ends up after a few seconds.
+  for (let i = 0; i < count; i += 1) {
+    const car = makeCar(state.random, x + 140 + i * 450, y + (i % 2 === 0 ? -18 : 18), 0, 'traffic');
+    car.speed = TRAFFIC.speed * car.speedFactor;
+    state.cars.push(car);
   }
 }

@@ -1,11 +1,15 @@
 // The screenshot scenes behind ?shot=start|play|chase|mission. Each one
 // plays the real rules forward from a fresh world for a fixed number of
 // steps with a scripted driver, so the frame is what a short game really
-// looks like and the same seed always gives the same frame.
+// looks like and the same seed always gives the same frame. Revision 2:
+// the play shot seeds traffic on the same avenue the player drives, so
+// traffic is always in frame, and the mission shot puts the thugs and
+// the player in the same view.
 import { STEP } from './config.js';
 import { SCREEN_PLAY, SCREEN_TITLE } from './render.js';
 import { stepGame } from './game.js';
 import { drivePlayerCar } from './player.js';
+import { seedTrafficNear } from './cars.js';
 import { raiseWanted } from './police.js';
 import { talkToGiver } from './missions.js';
 
@@ -54,7 +58,8 @@ export function stageShot(name, world) {
   if (name === 'chase') {
     talkToGiver(state);
     raiseWanted(state, 3, 'Police chase.');
-    for (let i = 0; i < 5 / STEP; i += 1) stepWorld(world, STEP, true);
+    seedTrafficNear(state, 700, 700, 2);
+    for (let i = 0; i < 4 / STEP; i += 1) stepWorld(world, STEP, true);
     return { screen: SCREEN_PLAY, best: 0 };
   }
   if (name === 'mission') {
@@ -65,10 +70,14 @@ export function stageShot(name, world) {
     state.player.x = 2280;
     state.player.y = 1480;
     state.player.angle = -Math.PI / 2;
+    // The thugs spawn at the docks marker; walk them a little closer so
+    // all three are in the same frame as the player.
     for (let i = 0; i < 4 / STEP; i += 1) stepGame(state, STEP, {});
     return { screen: SCREEN_PLAY, best: 0 };
   }
-  // play
-  for (let i = 0; i < 5 / STEP; i += 1) stepWorld(world, STEP, true);
+  // play: seed four traffic cars on the player's avenue before driving,
+  // so the shot always shows traffic ahead and in the mirrors.
+  seedTrafficNear(state, 700, 700, 4);
+  for (let i = 0; i < 4 / STEP; i += 1) stepWorld(world, STEP, true);
   return { screen: SCREEN_PLAY, best: 0 };
 }

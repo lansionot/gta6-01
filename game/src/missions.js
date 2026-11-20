@@ -1,8 +1,10 @@
 // The story: three chained missions with dialogue, objectives and
 // rewards, then free roam with repeatable courier jobs. Each mission is a
 // small state machine (talk -> go -> do -> done); the HUD reads the
-// current objective from here.
-import { MISSIONS } from './config.js';
+// current objective from here. Revision 2: jobs come in three kinds —
+// a plain package run, a two-stop taxi fare, and a getaway drive that
+// brings one star of heat — so free roam stays varied after the story.
+import { JOBS, MISSIONS } from './config.js';
 import { spawnThugs } from './combat.js';
 import { raiseWanted } from './police.js';
 
@@ -11,6 +13,8 @@ export const MISSION_SPOTS = {
   docks: { x: 2300, y: 1500 },
   marina: { x: 2700, y: 2300 },
   hideout: { x: 300, y: 500 },
+  park: { x: 1100, y: 1100 },
+  beach: { x: 1500, y: 2290 },
 };
 
 export function currentMission(state) {
@@ -19,7 +23,16 @@ export function currentMission(state) {
 
 export function missionObjective(state) {
   const mission = currentMission(state);
-  if (!mission) return 'Free roam — cause trouble, or take a courier job (press J).';
+  if (!mission) {
+    if (state.mission.stage === 'courier') {
+      const job = state.mission.jobType;
+      if (job === 'taxi' && state.mission.jobStage === 'pickup') return 'Taxi fare: pick up the passenger at the blue marker.';
+      if (job === 'taxi') return 'Taxi fare: drop the passenger at the yellow marker.';
+      if (job === 'getaway') return 'Getaway drive: reach the yellow marker — the police are watching.';
+      return 'Courier job: deliver the package to the yellow marker.';
+    }
+    return 'Free roam — cause trouble, hunt coins, or take a job (press J).';
+  }
   if (state.mission.stage === 'talk') return `Talk to ${mission.giver} — go to the blue marker.`;
   if (state.mission.stage === 'go') return mission.objective;
   if (state.mission.stage === 'fight') return `Deal with the Harbor Kings: ${state.mission.thugsLeft} left.`;
@@ -29,7 +42,10 @@ export function missionObjective(state) {
 
 export function missionTarget(state) {
   const mission = currentMission(state);
-  if (!mission) return null;
+  if (!mission) {
+    if (state.mission.stage === 'courier') return state.mission.target;
+    return null;
+  }
   if (state.mission.stage === 'talk') return MISSION_SPOTS.lena;
   if (mission.id === 'first-wheels') return MISSION_SPOTS.marina;
   if (mission.id === 'debt-collector') return MISSION_SPOTS.docks;
@@ -62,8 +78,11 @@ function completeMission(state) {
   state.mission.index += 1;
   state.mission.stage = 'talk';
   state.mission.timer = 0;
+  state.mission.jobType = null;
+  state.mission.jobStage = null;
   say(state, mission.giver, `Done. $${mission.reward} is yours, Rook.`, 4);
   state.notice = `Mission complete: ${mission.title} — +$${mission.reward}`;
+  state.missionEvent = 'done';
 }
 
 export function talkToGiver(state) {
@@ -108,13 +127,27 @@ export function updateMissions(state, dt) {
   }
 }
 
-/** Start a repeatable courier job after the story is done. */
+function jobSpot(state, exclude) {
+  const spots = [MISSION_SPOTS.marina, MISSION_SPOTS.docks, MISSION_SPOTS.hideout, MISSION_SPOTS.lena, MISSION_SPOTS.park, MISSION_SPOTS.beach];
+  const pool = spots.filter((s) => s !== exclude);
+  return pool[Math.floor(state.random() * pool.length)];
+}
+
+/** Start a repeatable job after the story is done: package, taxi or getaway. */
 export function startCourierJob(state) {
   if (currentMission(state)) return false;
-  const spots = [MISSION_SPOTS.marina, MISSION_SPOTS.docks, MISSION_SPOTS.hideout, MISSION_SPOTS.lena];
-  const target = spots[Math.floor(state.random() * spots.length)];
-  state.mission = { index: MISSIONS.length, stage: 'courier', done: state.stats.missionsDone, target, timer: 0, thugsLeft: 0 };
-  state.notice = 'Courier job: deliver the package to the yellow marker. +$150';
+  const job = JOBS[Math.floor(state.random() * JOBS.length)];
+  const first = jobSpot(state, null);
+  state.mission = {
+    index: MISSIONS.length, stage: 'courier', done: state.stats.missionsDone,
+    target: first, timer: 0, thugsLeft: 0,
+    jobType: job.type, jobStage: job.type === 'taxi' ? 'pickup' : 'dropoff',
+  };
+  if (job.type === 'taxi') state.notice = `Taxi fare: pick up the passenger at the blue marker. +$${job.reward}`;
+  else if (job.type === 'getaway') {
+    raiseWanted(state, 1, 'Getaway drive: the police noticed the car. Lose them at the marker.');
+    state.notice = `Getaway drive: reach the yellow marker. +$${job.reward}`;
+  } else state.notice = `Courier job: deliver the package to the yellow marker. +$${job.reward}`;
   return true;
 }
 
@@ -122,9 +155,21 @@ export function updateCourier(state) {
   if (state.mission.stage !== 'courier' || !state.mission.target) return;
   const t = state.mission.target;
   if (Math.hypot(state.player.x - t.x, state.player.y - t.y) < 90) {
-    state.player.money += 150;
+    const job = JOBS.find((j) => j.type === state.mission.jobType) ?? JOBS[0];
+    if (job.type === 'taxi' && state.mission.jobStage === 'pickup') {
+      // Passenger is in: now drive them to their destination.
+      state.mission.jobStage = 'dropoff';
+      state.mission.target = jobSpot(state, t);
+      state.notice = 'Passenger aboard — drive them to the yellow marker.';
+      return;
+    }
+    state.player.money += job.reward;
+    state.stats.jobsDone += 1;
     state.mission.stage = 'talk';
     state.mission.target = null;
-    state.notice = 'Courier job done — +$150';
+    state.mission.jobType = null;
+    state.mission.jobStage = null;
+    state.notice = `${job.label} done — +$${job.reward}`;
+    state.missionEvent = 'done';
   }
 }

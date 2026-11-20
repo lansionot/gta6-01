@@ -12,6 +12,7 @@ export const ACTION_MAP = 32;
 export const ACTION_JOB = 64;
 export const ACTION_TALK = 128;
 export const ACTION_MUTE = 256;
+export const ACTION_HONK = 512;
 
 const UP = new Set(['ArrowUp', 'KeyW']);
 const DOWN = new Set(['ArrowDown', 'KeyS']);
@@ -26,6 +27,7 @@ const MAP = new Set(['KeyM']);
 const JOB = new Set(['KeyJ']);
 const TALK = new Set(['KeyT']);
 const MUTE = new Set(['KeyN']);
+const HONK = new Set(['KeyH']);
 
 export function createInput(canvas) {
   const keys = new Set();
@@ -48,6 +50,7 @@ export function createInput(canvas) {
     else if (JOB.has(event.code)) actions |= ACTION_JOB;
     else if (TALK.has(event.code)) actions |= ACTION_TALK;
     else if (MUTE.has(event.code)) actions |= ACTION_MUTE;
+    else if (HONK.has(event.code)) actions |= ACTION_HONK;
     if (UP.has(event.code) || DOWN.has(event.code) || LEFT.has(event.code) || RIGHT.has(event.code) || CONFIRM.has(event.code) || PAUSE.has(event.code)) event.preventDefault();
   });
   window.addEventListener('keyup', (event) => keys.delete(event.code));

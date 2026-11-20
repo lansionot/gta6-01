@@ -2,8 +2,10 @@
 // hits the nearest enemy or pedestrian in front of the player; a shot
 // fires toward the mouse (on foot) with limited ammo, a muzzle flash and
 // a wanted star. Enemies chase the player, punch up close and shoot
-// from a distance.
-import { PLAYER } from './config.js';
+// from a distance. Revision 2: thugs are fair (less damage, slower
+// swings, shorter shooting range), hits flash white, kills can drop
+// health, and every shot kicks the player back a little.
+import { ENEMY, PLAYER } from './config.js';
 import { addParticles, makeEnemy } from './world.js';
 import { damagePlayer } from './player.js';
 import { raiseWanted } from './police.js';
@@ -26,7 +28,9 @@ export function punch(state) {
   }
   if (target) {
     target.health -= PLAYER.punchDamage;
+    target.flash = 0.15;
     addParticles(state, target.x, target.y, '#ffffff', 6, 160);
+    state.shake = Math.max(state.shake, 0.12);
     if (target.health <= 0) killEnemy(state, target);
     return { hit: 'enemy', target };
   }
@@ -53,6 +57,10 @@ export function shoot(state, angle) {
   const oy = player.y + Math.sin(angle) * 24;
   state.bullets.push({ x: ox, y: oy, vx: Math.cos(angle) * PLAYER.bulletSpeed, vy: Math.sin(angle) * PLAYER.bulletSpeed, life: 0.9, fromPlayer: true });
   addParticles(state, ox, oy, '#ffe08a', 5, 200);
+  // Recoil: the shooter is pushed back a little, and the muzzle flashes.
+  player.recoilTimer = 0.12;
+  state.muzzleAngle = angle;
+  state.gunfireTimer = 0.5;
   if (state.wanted === 0) raiseWanted(state, 1, 'Shots fired — the police are coming.');
   return true;
 }
@@ -61,7 +69,9 @@ export function killEnemy(state, enemy) {
   enemy.alive = false;
   addParticles(state, enemy.x, enemy.y, '#e5534b', 14, 220);
   state.player.money += 40;
-  if (state.random() < 0.5) state.pickups.push({ x: enemy.x, y: enemy.y, kind: 'ammo', amount: 12 });
+  const roll = state.random();
+  if (roll < 0.4) state.pickups.push({ x: enemy.x, y: enemy.y, kind: 'ammo', amount: 12 });
+  else if (roll < 0.7) state.pickups.push({ x: enemy.x, y: enemy.y, kind: 'health', amount: 25 });
 }
 
 /** Move bullets, hit enemies, police cars, traffic and the player. */
@@ -76,7 +86,8 @@ export function updateBullets(state, dt) {
       for (const enemy of state.enemies) {
         if (!enemy.alive) continue;
         if (Math.hypot(enemy.x - bullet.x, enemy.y - bullet.y) < 20) {
-          enemy.health -= 34;
+          enemy.health -= PLAYER.bulletDamage;
+          enemy.flash = 0.15;
           addParticles(state, bullet.x, bullet.y, '#e5534b', 5, 140);
           if (enemy.health <= 0) killEnemy(state, enemy);
           dead = true;
@@ -117,6 +128,7 @@ export function updateEnemies(state, dt) {
   const player = state.player;
   for (const enemy of state.enemies) {
     if (!enemy.alive) continue;
+    if (enemy.flash > 0) enemy.flash -= dt;
     const dx = player.x - enemy.x;
     const dy = player.y - enemy.y;
     const dist = Math.hypot(dx, dy);
@@ -127,16 +139,16 @@ export function updateEnemies(state, dt) {
     } else {
       enemy.punchTimer -= dt;
       if (enemy.punchTimer <= 0) {
-        enemy.punchTimer = 0.9;
-        damagePlayer(state, 10);
+        enemy.punchTimer = ENEMY.punchCooldown;
+        damagePlayer(state, ENEMY.punchDamage);
         addParticles(state, player.x, player.y, '#ffffff', 4, 120);
       }
     }
-    if (dist > 180 && dist < 520) {
+    if (dist > ENEMY.shootMinRange && dist < ENEMY.shootMaxRange) {
       enemy.shootTimer -= dt;
       if (enemy.shootTimer <= 0) {
-        enemy.shootTimer = 1.6 + state.random();
-        state.bullets.push({ x: enemy.x, y: enemy.y, vx: Math.cos(enemy.angle) * 620, vy: Math.sin(enemy.angle) * 620, life: 1.1, fromPlayer: false });
+        enemy.shootTimer = ENEMY.shootInterval + state.random();
+        state.bullets.push({ x: enemy.x, y: enemy.y, vx: Math.cos(enemy.angle) * ENEMY.bulletSpeed, vy: Math.sin(enemy.angle) * ENEMY.bulletSpeed, life: 1.1, fromPlayer: false });
         addParticles(state, enemy.x, enemy.y, '#ffe08a', 3, 140);
       }
     }

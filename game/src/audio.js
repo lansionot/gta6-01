@@ -1,7 +1,9 @@
 // Sound with no audio files: every sound is a WebAudio oscillator or a
 // short burst of filtered noise, built on the first user gesture (the
-// browser requires one before audio may start).
-
+// browser requires one before audio may start). Revision 2: every sound
+// is logged (name + audio-clock time) so a headless run can prove the
+// oscillators actually fired, and there are new sounds for coins, jobs
+// and the car horn.
 export function createAudio() {
   let context = null;
   let master = null;
@@ -11,6 +13,15 @@ export function createAudio() {
   let sirenGain = null;
   let muted = false;
   let sirenOn = false;
+  // Every sound event, in order: the headless play-test reads this log.
+  const log = [];
+  let eventCount = 0;
+
+  function record(name) {
+    eventCount += 1;
+    log.push({ name, at: context ? context.currentTime : 0, n: eventCount });
+    if (log.length > 200) log.shift();
+  }
 
   function ensure() {
     if (context) return true;
@@ -37,6 +48,7 @@ export function createAudio() {
       sirenOsc.connect(sirenGain);
       sirenGain.connect(master);
       sirenOsc.start();
+      record('context');
       return true;
     } catch {
       return false;
@@ -86,11 +98,17 @@ export function createAudio() {
     },
     setMuted(value) { muted = value; if (master) master.gain.value = muted ? 0 : 0.35; },
     isMuted() { return muted; },
-    gunshot() { noise(0.14, 0.5, 1800); },
-    punch() { noise(0.09, 0.4, 500); tone(90, 0.1, 'sine', 0.3, 50); },
-    pickup() { tone(880, 0.12, 'sine', 0.25, 1320); },
-    missionDone() { tone(523, 0.15, 'triangle', 0.3); setTimeout(() => tone(659, 0.15, 'triangle', 0.3), 140); setTimeout(() => tone(784, 0.3, 'triangle', 0.3), 280); },
-    crash() { noise(0.25, 0.5, 700); },
+    /** The sound log, for headless verification that sounds really fired. */
+    getLog() { return log.slice(); },
+    getEventCount() { return eventCount; },
+    isReady() { return context !== null && context.state === 'running'; },
+    gunshot() { noise(0.14, 0.5, 1800); record('gunshot'); },
+    punch() { noise(0.09, 0.4, 500); tone(90, 0.1, 'sine', 0.3, 50); record('punch'); },
+    pickup() { tone(880, 0.12, 'sine', 0.25, 1320); record('pickup'); },
+    coin() { tone(1046, 0.1, 'sine', 0.3); setTimeout(() => tone(1568, 0.18, 'sine', 0.3), 90); record('coin'); },
+    honk() { tone(370, 0.18, 'square', 0.2); tone(466, 0.18, 'square', 0.15); record('honk'); },
+    missionDone() { tone(523, 0.15, 'triangle', 0.3); setTimeout(() => tone(659, 0.15, 'triangle', 0.3), 140); setTimeout(() => tone(784, 0.3, 'triangle', 0.3), 280); record('missionDone'); },
+    crash() { noise(0.25, 0.5, 700); record('crash'); },
     setEngine(speed, inCar) {
       if (!ensure() || muted) return;
       const target = inCar ? 0.05 + Math.min(0.12, Math.abs(speed) / 520 * 0.12) : 0;

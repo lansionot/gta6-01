@@ -26,3 +26,15 @@ export function pick(random, list) {
 export function range(random, min, max) {
   return min + random() * (max - min);
 }
+
+/** A shuffled copy of `list`, drawn with the seeded generator. */
+export function shuffle(random, list) {
+  const out = list.slice();
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    const tmp = out[i];
+    out[i] = out[j];
+    out[j] = tmp;
+  }
+  return out;
+}

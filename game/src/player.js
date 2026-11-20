@@ -1,8 +1,10 @@
 // The player, on foot and behind the wheel. On foot the player walks and
 // runs in the direction the keys point; in a car the keys are throttle,
 // brake and steering, with skid and smoke when turning hard at speed.
+// Revision 2: taking a hit shakes the camera, firing kicks the player
+// back a little, and stepping out of a car picks the side with room.
 import { CAR, PLAYER, WORLD } from './config.js';
-import { clampToWorld, hitsBuilding, nearestCar } from './world.js';
+import { clampToWorld, hitsBuilding, isOnRoad, nearestCar } from './world.js';
 
 function moveWithCollision(state, entity, dx, dy, radius) {
   // If the entity already overlaps a building (a spawn on a corner, for
@@ -23,6 +25,11 @@ export function movePlayerOnFoot(state, dt, move, run) {
   player.moving = move.x !== 0 || move.y !== 0;
   if (player.moving) player.angle = Math.atan2(move.y, move.x);
   moveWithCollision(state, player, move.x * speed * dt, move.y * speed * dt, PLAYER.radius);
+  // Recoil from a shot pushes the shooter back along the aim line.
+  if (player.recoilTimer > 0) {
+    player.recoilTimer -= dt;
+    moveWithCollision(state, player, -Math.cos(player.angle) * 60 * dt, -Math.sin(player.angle) * 60 * dt, PLAYER.radius);
+  }
 }
 
 /** Drive the car the player is in. `throttle` -1..1, `steer` -1..1. */
@@ -41,6 +48,7 @@ export function drivePlayerCar(state, dt, throttle, steer) {
   if (hitsBuilding(state.city.buildings, nextX, nextY, CAR.length / 2)) {
     car.speed *= -0.25;
     car.smoke = 0.8;
+    state.shake = Math.max(state.shake, 0.25);
   } else {
     car.x = nextX;
     car.y = nextY;
@@ -65,8 +73,14 @@ export function toggleEnterCar(state) {
     const car = player.inCar;
     car.driver = null;
     player.inCar = null;
-    player.x = car.x + Math.cos(car.angle + Math.PI / 2) * 44;
-    player.y = car.y + Math.sin(car.angle + Math.PI / 2) * 44;
+    // Step out on the side that is not on the road, when one exists.
+    const leftX = car.x + Math.cos(car.angle + Math.PI / 2) * 44;
+    const leftY = car.y + Math.sin(car.angle + Math.PI / 2) * 44;
+    const rightX = car.x + Math.cos(car.angle - Math.PI / 2) * 44;
+    const rightY = car.y + Math.sin(car.angle - Math.PI / 2) * 44;
+    const leftOnRoad = isOnRoad(leftX, leftY);
+    player.x = leftOnRoad ? rightX : leftX;
+    player.y = leftOnRoad ? rightY : leftY;
     clampToWorld(player, PLAYER.radius);
     return { entered: false, car };
   }
@@ -88,6 +102,7 @@ export function damagePlayer(state, amount) {
   if (player.invulnerable > 0 || state.over) return;
   player.health -= amount;
   player.invulnerable = 0.4;
+  state.shake = Math.max(state.shake, 0.3);
   if (player.health <= 0) {
     player.health = 0;
     state.over = 'wasted';

@@ -2,9 +2,11 @@
 // many police cars hunt the player. A police car chases, rams the player's
 // car, and on foot it tries to arrest: stand close and slow for long
 // enough and the player is busted. Stars fade when no crime happens and
-// no police car can see the player.
+// no police car can see the player. Revision 2: police are slower than
+// the player's top speed, steer less perfectly, and the heat fades
+// faster at low stars — escape is always a real option.
 import { POLICE, WANTED } from './config.js';
-import { addParticles, clampToWorld, makeCar, roadPoint } from './world.js';
+import { addParticles, clampToWorld, hitsBuilding, makeCar, roadPoint } from './world.js';
 import { damagePlayer } from './player.js';
 
 export function raiseWanted(state, stars, reason) {
@@ -28,7 +30,10 @@ export function spawnPoliceCar(state) {
 
 /** Keep the number of active police cars matched to the wanted level. */
 export function syncPolice(state) {
-  const wantedCount = state.wanted === 0 ? 0 : Math.min(POLICE.maxActive, state.wanted + 1);
+  // During the harbor-heist escape the whole force is on you, but never
+  // more than four cars at once: the chase stays tense, not a wall.
+  const escapeCap = state.mission.stage === 'escape' ? 4 : POLICE.maxActive;
+  const wantedCount = state.wanted === 0 ? 0 : Math.min(escapeCap, state.wanted + 1);
   while (state.police.length < wantedCount) spawnPoliceCar(state);
   while (state.police.length > wantedCount) {
     const car = state.police.pop();
@@ -49,20 +54,29 @@ function steerToward(car, tx, ty, dt, rate) {
 export function updatePoliceCar(state, car, dt) {
   const player = state.player;
   const dist = Math.hypot(player.x - car.x, player.y - car.y);
-  steerToward(car, player.x, player.y, dt, 3.2);
+  // Police steer toward the player but wobble: they overshoot corners and
+  // cannot turn on a coin, so a sharp turn loses them.
+  const wobble = Math.sin(state.time * 1.7 + car.id % 10) * 0.12;
+  steerToward(car, player.x + Math.cos(wobble) * 40, player.y + Math.sin(wobble) * 40, dt, POLICE.steerRate);
   const targetSpeed = dist > 400 ? POLICE.speed : POLICE.speed * 0.85;
   car.speed += (targetSpeed - car.speed) * Math.min(1, dt * 1.5);
-  car.x += Math.cos(car.angle) * car.speed * dt;
-  car.y += Math.sin(car.angle) * car.speed * dt;
+  // Move one axis at a time and slide along buildings instead of driving
+  // through them: a police car that cuts a corner hugs the wall.
+  const stepX = Math.cos(car.angle) * car.speed * dt;
+  const stepY = Math.sin(car.angle) * car.speed * dt;
+  if (!hitsBuilding(state.city.buildings, car.x + stepX, car.y, 30)) car.x += stepX;
+  else car.angle += Math.PI / 3 * dt * 4;
+  if (!hitsBuilding(state.city.buildings, car.x, car.y + stepY, 30)) car.y += stepY;
+  else car.angle += Math.PI / 3 * dt * 4;
   clampToWorld(car, 32);
   if (dist < 70) {
     if (player.inCar) {
-      // Ram: slow the player's car and shake it.
-      player.inCar.speed *= 0.92;
+      // Ram: slow the player's car and shake it, but do not stop it dead.
+      player.inCar.speed *= 0.94;
       damagePlayer(state, POLICE.ramDamage * dt * 2);
       addParticles(state, car.x, car.y, '#ffdd55', 2, 120);
     } else if (player.speed < 60) {
-      // On foot and cornered: the arrest clock runs.
+      // On foot and cornered: the arrest clock runs. Running breaks it.
       state.arrestTimer = (state.arrestTimer ?? 0) + dt;
       if (state.arrestTimer > POLICE.arrestTime) state.over = 'busted';
     }
@@ -77,7 +91,22 @@ export function updatePolice(state, dt) {
   if (state.wanted > 0) {
     state.wantedTimer += dt;
     const anyNear = state.police.some((car) => Math.hypot(car.x - state.player.x, car.y - state.player.y) < 500);
-    if (state.wantedTimer > WANTED.decaySeconds && !anyNear) {
+    // Far from every police car for a while: the trail goes cold.
+    const farDist = Math.min(...state.police.map((car) => Math.hypot(car.x - state.player.x, car.y - state.player.y)), 9999);
+    if (farDist > 900) {
+      state.escapeTimer = (state.escapeTimer ?? 0) + dt;
+      if (state.escapeTimer > 5) {
+        state.wanted = Math.max(0, state.wanted - 1);
+        state.wantedTimer = 0;
+        state.escapeTimer = 0;
+        state.notice = state.wanted === 0 ? 'You lost the heat.' : 'Wanted level down — you are outrunning them.';
+        return;
+      }
+    } else {
+      state.escapeTimer = 0;
+    }
+    const decayAfter = WANTED.decayBaseSeconds + WANTED.decayPerStarSeconds * state.wanted;
+    if (state.wantedTimer > decayAfter && !anyNear) {
       state.wanted -= 1;
       state.wantedTimer = 0;
       state.notice = state.wanted === 0 ? 'You lost the heat.' : 'Wanted level down.';

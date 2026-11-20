@@ -1,7 +1,9 @@
 // Boot and the one loop: input is read every frame, the game advances in
 // fixed 1/60 s steps (several in a slow frame, none in a fast one), and the
 // renderer paints what is there. The game moves between four screens:
-// title, play, paused and game over.
+// title, play, paused and game over. Revision 2: the horn (H), pickup
+// and mission jingles, and window.__solmarAudio so a headless run can
+// prove the WebAudio sounds actually fired.
 //
 // ?seed=N fixes the city layout. ?shot=start|play|chase|mission (with
 // &seed=N) stages that scene instead of running the loop, paints it twice
@@ -17,7 +19,7 @@ import { startCourierJob, talkToGiver } from './missions.js';
 import { applySave, hasSave, loadSave, saveGame } from './save.js';
 import { createAudio } from './audio.js';
 import {
-  ACTION_CONFIRM, ACTION_ENTER_CAR, ACTION_JOB, ACTION_MAP, ACTION_MUTE,
+  ACTION_CONFIRM, ACTION_ENTER_CAR, ACTION_HONK, ACTION_JOB, ACTION_MAP, ACTION_MUTE,
   ACTION_PAUSE, ACTION_PUNCH, ACTION_SHOOT, ACTION_TALK, createInput,
 } from './input.js';
 import { createRenderer, SCREEN_OVER, SCREEN_PAUSED, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
@@ -97,6 +99,7 @@ function runGame() {
     }
     if (actions & ACTION_MAP) showMap = !showMap;
     if (actions & ACTION_MUTE) audio.toggleMute();
+    if (actions & ACTION_HONK) audio.honk();
     if (actions & ACTION_ENTER_CAR) {
       const result = toggleEnterCar(world.state);
       if (result.entered && result.stolen) {
@@ -145,6 +148,16 @@ function runGame() {
         }
         stepGame(state, STEP, controls);
         accumulator -= STEP;
+        // The step flags sounds; the loop turns them into audio.
+        if (state.pickupEvent) {
+          if (state.pickupEvent === 'coin') audio.coin();
+          else audio.pickup();
+          state.pickupEvent = null;
+        }
+        if (state.missionEvent) {
+          audio.missionDone();
+          state.missionEvent = null;
+        }
         if (state.over) {
           endGame();
           break;
@@ -156,7 +169,7 @@ function runGame() {
     } else {
       accumulator = 0;
     }
-    renderer.draw(world.state, screen, { hasSave: hasSave(), showMap });
+    renderer.draw(world.state, screen, { hasSave: hasSave(), showMap, muted: audio.isMuted() });
   }
 
   document.addEventListener('visibilitychange', () => {
@@ -169,6 +182,8 @@ function runGame() {
 
   announce('Solmar Bay. Press Space or click to start.');
   window.__solmar = world;
+  // The audio log is how a headless play-test proves sounds fired.
+  window.__solmarAudio = audio;
   requestAnimationFrame(frame);
 }
 
